@@ -6,7 +6,7 @@ const debug = require('debug')
 
 const rp = require('request-promise')
 
-class GoogleRecaptcha {
+class GoogleRecaptchaAsync {
   constructor({
     apiUrl,
     secret,
@@ -73,10 +73,10 @@ class GoogleRecaptcha {
   }
 }
 
-GoogleRecaptcha.prototype
+GoogleRecaptchaAsync.prototype
   .DEFAULT_API_URL = 'https://www.google.com/recaptcha/api/siteverify'
 
-GoogleRecaptcha.prototype
+GoogleRecaptchaAsync.prototype
   .STATUS_OK = STATUS_OK
 
-module.exports = GoogleRecaptcha
+module.exports = GoogleRecaptchaAsync
