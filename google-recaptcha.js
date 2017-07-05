@@ -3,13 +3,14 @@
 const STATUS_OK = 200
 
 const debug = require('debug')
-const request = require('request')
+
+const rp = require('request-promise')
 
 class GoogleRecaptcha {
   constructor({
-    apiUrl
-  , secret
-  , logger
+    apiUrl,
+    secret,
+    logger
   }) {
     if (!secret) {
       throw new Error('Missing secret key.')
@@ -23,57 +24,51 @@ class GoogleRecaptcha {
   }
 
   verify({
-    response
-  , remoteIp
-  }, callback) {
-    const secret = this.secret
+    response,
+    remoteIp
+  }) {
+    return new Promise((resolve, reject) => {
+      const secret = this.secret
 
-    if (!response) {
-      return callback && callback(new Error('Missing response object.'), null)
-    }
-
-    const form = {
-      remoteip: remoteIp
-    , response
-    , secret
-    }
-
-    const requestOptions = {
-      form
-    , json: true
-    , url: this.apiUrl
-    }
-
-    this.logger('Making POST request to Google:', requestOptions)
-
-    return request.post(requestOptions, (error, response, body) => {
-      this.logger('Received POST response:', error, response.statusCode, body)
-
-      if (error) {
-        return callback && callback(error, null)
+      if (!response) {
+        reject(new Error('Missing response object.'))
       }
 
-      if (response.statusCode !== this.STATUS_OK) {
-        return callback && callback(
-          new Error(`Bad response code: ${response.statusCode}`)
-        , null
-        )
+      const form = {
+        remoteip: remoteIp
+        , response
+        , secret
       }
 
-      if (!body.success) {
-        const errorCodes = body['error-codes']
-
-        const errorCodesList = Array.isArray(errorCodes)
-          ? errorCodes.join(', ')
-          : 'Unknown'
-
-        return callback && callback(
-          new Error(`Failed to verify: ${errorCodesList}`)
-        , body
-        )
+      const requestOptions = {
+        form
+        , json: true
+        , url: this.apiUrl
       }
 
-      return callback && callback(null, body)
+      this.logger('Making POST request to Google:', requestOptions)
+
+      rp.post(requestOptions)
+      .then((response) => {
+        if (response.statusCode !== this.STATUS_OK) {
+          reject(new Error(`Bad response code: ${response.statusCode}`))
+        }
+
+        if (!response.body.success) {
+          const errorCodes = response.body['error-codes']
+
+          const errorCodesList = Array.isArray(errorCodes) ?
+            errorCodes.join(', ') :
+            'Unknown'
+
+          reject(new Error(`Failed to verify: ${errorCodesList}`))
+        }
+
+        resolve(response.body.success)
+      })
+      .catch((error) => {
+        reject(error)
+      })
     })
   }
 }
