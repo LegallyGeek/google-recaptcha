@@ -43,6 +43,7 @@ class GoogleRecaptchaAsync {
       const requestOptions = {
         form
         , json: true
+        , resolveWithFullResponse: true
         , url: this.apiUrl
       }
 
